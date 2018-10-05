@@ -190,40 +190,7 @@ function serializeDisplayStateToNumArray(){
 
 	var displayStateJSON = serializeDisplayStateToJSON();
 
-	var colList = [];
-
-
-	for (var pixelCol = 0; pixelCol != displayStateJSON.columnData.length; ++pixelCol){
-		for (var pixelRow = 0; pixelRow != displayStateJSON.columnData[pixelCol].length; ++pixelRow){
-
-			var pixelState = displayStateJSON.columnData[pixelCol][pixelRow];
-			var colData = colList[pixelCol]||0;
-
-			var pixelBits = pixelState << (pixelRow*2);
-			var pixelMask = 0x03 << (pixelRow*2);
-			console.log(
-				"Pixel: " + pixelCol + "x" + pixelRow
-					+ "; Pixel State: " + pixelState
-					+ "; Pixel Mask: " + pixelMask
-					+ "; Pixel Data: " + pixelBits);
-			pixelMask ^= 0xff;
-			colData |= pixelBits;
-			colList[pixelCol] = colData;
-		}
-	}
-
-	var arr = [];
-
-	// create V0 file header, so reader can parse correctly.
-	arr.push.apply(arr, SdffBuilder.makeDispBoxHeader(COLS, ROWS, colList.length*4));
-
-	for (var idx=0; idx !== colList.length; ++idx){
-		var item = colList[idx];
-		arr.push( (item>>24)&0xff );
-		arr.push( (item>>16)&0xff );
-		arr.push( (item>>8)&0xff );
-		arr.push( item&0xff );
-	}
+	var arr = SdffBuilder.serializeDisplay(displayStateJSON);
 
 	return arr;
 }
@@ -271,77 +238,10 @@ function restoreDisplayStateFromNumArray(){
 function serializeScriptToNumArray(){
 	var scriptJSON = serializeScriptToJSON();
 
-	var ret = serializeScriptBox(scriptJSON.flags);
-	for (var idx=0; idx != scriptJSON.count; ++idx){
-		console.log(
-			"Serialize script action box: "
-			+ idx
-			+ "/"
-			+ scriptJSON.count
-			+ "; type: "
-			+ scriptJSON.items[idx].type);
-
-		var boxBytes;
-		switch(scriptJSON.items[idx].type){
-			case "scroll":
-				boxBytes = serializeScrollScriptAction(scriptJSON.items[idx]);				
-				break;
-			case "pause":
-				boxBytes = serializePauseScriptAction(scriptJSON.items[idx]);				
-				break;
-			case "position":
-				boxBytes = serializePositionScriptAction(scriptJSON.items[idx]);
-				break;
-			default:
-				console.error("Invalid script action type: "+scriptJSON.items[idx].type);
-				break;
-		}
-
-		ret.push.apply(ret, boxBytes);
-	}
+	var ret = SdffBuilder.serializeScript(scriptJSON);
 
 	return ret;
 }
-
-function serializeScriptBox(flags){
-	var arr = [];
-
-	arr.push.apply(arr, SdffBuilder.makeBoxHeader("scpt", 0, flags, 8));
-
-	return arr;
-}
-
-function serializeScrollScriptAction(action){
-	var arr = [];
-
-	arr.push.apply(arr, SdffBuilder.makeBoxHeader("sscr", 0, 0, 13))
-	SdffBuilder.pushInt16BE(arr, action.step);
-	SdffBuilder.pushInt16BE(arr, action.delay);
-	SdffBuilder.pushInt8(arr, action.count);
-
-	return arr;
-}
-
-function serializePositionScriptAction(action){
-	var arr = [];
-
-	arr.push.apply(arr, SdffBuilder.makeBoxHeader("spos", 0, 0, 10))
-	SdffBuilder.pushInt16BE(arr, action.position);
-
-	return arr;
-}
-
-function serializePauseScriptAction(action){
-	var arr = [];
-
-	arr.push.apply(arr, SdffBuilder.makeBoxHeader("spau", 0, 0, 10))
-	SdffBuilder.pushInt16BE(arr, action.duration);
-
-	return arr;
-}
-
-
-
 
 
 var Script = {
