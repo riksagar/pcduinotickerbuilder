@@ -134,6 +134,8 @@ function scriptBuilderInit(){
  * 
  * @param {Number} columns 
  * @param {Number} rows 
+ * 
+ * @returns {DS}
  */
 function makeDisplay(columns, rows){
     return {
