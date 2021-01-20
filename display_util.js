@@ -12,7 +12,8 @@ let Display = {
         OFF: 0, 
         RED: 1, 
         GREEN: 2, 
-        YELLOW: 3
+        YELLOW: 3,
+        ALPHA: 0x8000
     }
 };
 
@@ -186,6 +187,11 @@ let DB  = {
      */
     addColumn: function(row){},
     /**
+     * @param {Display.PixelState} color
+     * @returns {DB}
+     */
+    addEmptyColumn: function(color){},
+    /**
      * @param {Display.PixelState} row[]
      * @returns {DB}
      */
@@ -231,6 +237,15 @@ function displayBuilderInit(){
             ++activeColumn;
 
             return api;
+        },
+        addEmptyColumn: function(color){
+            if (!display || !display.rows) throw new Error("Display object not set");
+
+            let column = [];
+            for(let i=0; i !== display.rows; ++i){
+                column.push(color);
+            }
+            return api.addColumn(column);
         },
         build: function(){
             return display;
